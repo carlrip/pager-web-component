@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="import" href="pager.html" id="pager-link">
+	</head>
+	<body>
+		<h1>x-pager</h1>
+		<x-pager page="1" page-count="5" class="dark"></x-pager>
+
+		<script>
+			(function () {
+				var pager,
+					onChangedPage;
+				pager = document.querySelector("x-pager");
+				pager.page(2);
+
+				onChangedPage = function (args) {
+					console.log(args.detail);
+				};
+
+				pager.addEventListener("pageChanged", onChangedPage.bind(this), false);
+			})();
+		</script>
+	</body>
+</html>
