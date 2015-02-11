@@ -1,0 +1,143 @@
+<template>
+	<style>
+		:host div {
+			padding: 6px;
+			width: 270px;
+		}
+		:host(.light) div {
+			background-color: rgb(241, 243, 241);
+		}
+		:host(.dark) div {
+			background-color: rgb(59, 60, 59);
+		}
+		:host a {
+			margin-right: 6px;
+			text-decoration: none;
+		}
+		:host a:hover {
+			text-decoration: underline;
+		}
+		:host(.light) a {
+			color: blue;
+		}
+		:host(.dark) a {
+			color: rgb(236, 236, 246);
+		}
+		:host span {
+			margin-left: 20px;
+		}
+		:host(.light) span {
+			color: rgb(189, 201, 189);
+		}
+		:host(.dark) span {
+			color: rgb(149, 160, 149);
+		}
+	</style>
+	<div>
+		<a href='#' title='Go to the first page'>first</a>
+		<a href='#' title='Go to the previous page'>previous</a>
+		<a href='#' title='Go to the next page'>next</a>
+		<a href='#' title='Go to the last page'>last</a> 
+		<span class='x-pager-text'>page x of y</span>
+	</div>
+</template>
+
+<script>
+	(function () {
+		var Proto = Object.create(HTMLElement.prototype),
+			importDoc = document.currentScript.ownerDocument, 
+			root,
+			pageNumber = 1,
+			pageCount = 0;
+
+		Proto.createdCallback = function() {
+			var template = importDoc.querySelector("template"), 
+				clone = document.importNode(template.content, true);
+			root = this.createShadowRoot();
+			root.appendChild(clone);
+
+			this._readAttributes();
+			this._changePage();
+			this._addEventListeners();
+		};
+
+		Proto.attributeChangedCallback = function(attrName, oldVal, newVal) {
+		    this._readAttributes();
+		    if (attrName === "page" || attrName === "page-count") {
+		    	this._changePage();
+		    }
+		};
+
+		Proto.page = function (page) {
+			var pageChangedEvent;
+			if (page) {
+				if (this.pageNumber !== page) {
+					this.pageNumber = page;
+					this._changePage();
+
+					pageChangedEvent = new CustomEvent("pageChanged", {
+						detail: {
+							pageNumber: this.pageNumber
+						},
+						bubbles: true,
+						cancelable: false
+					});
+					this.dispatchEvent(pageChangedEvent);
+				}
+			}
+			return this.pageNumber;
+		};
+
+		Proto._readAttributes = function () {
+			var pageStr,
+				pageCountStr;
+			pageStr = this.getAttribute("page");
+			if (!pageStr) {
+				pageStr = "0";
+			}
+			this.pageNumber = parseInt(pageStr, 10);
+			pageCountStr = this.getAttribute("page-count");
+			if (!pageCountStr) {
+				pageCountStr = "0";
+			}
+			this.pageCount = parseInt(pageCountStr, 10);
+		};
+
+		Proto._changePage = function () {
+			root.querySelector("span").innerHTML = "page " + this.pageNumber + " of " + this.pageCount;
+		};
+
+		Proto._linkClick = function (args) {
+			var gotoPage;
+			if (args.target.innerText === "first") {
+				gotoPage = 1;
+			} else if (args.target.innerText === "previous") {
+				gotoPage = this.pageNumber - 1;
+				if (gotoPage < 1) {
+					gotoPage = 1;
+				}
+			} else if (args.target.innerText === "next") {
+				gotoPage = this.pageNumber + 1;
+				if (gotoPage > this.pageCount) {
+					gotoPage = this.pageCount;
+				}
+			} else if (args.target.innerText === "last") {
+				gotoPage = this.pageCount;
+			}
+			this.page(gotoPage);
+		};
+
+		Proto._addEventListeners = function () {
+			var links,
+				i;
+			links = root.querySelectorAll("a");
+			if (links.length > 0) {
+				for (i = 0; i < links.length; i = i + 1) {
+					links[i].addEventListener("click", this._linkClick.bind(this), false);
+				}
+			}
+		};
+
+		document.registerElement('x-pager', {prototype: Proto});
+	})();
+</script>
